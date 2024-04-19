@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: kn-mc-java
+  name: mc-server-nodeport
+  namespace: mc-server
+spec:
+  ports:
+  - name: mc-server-nodeport
+    nodePort: 30002
+    port: 25565
+    protocol: TCP
+    targetPort: 25565
+  selector:
+    app: kn-mc-java
+  type: NodePort

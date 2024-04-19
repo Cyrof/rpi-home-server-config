@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kn-mc-java
+  namespace: mc-server
+  labels:
+    app: kn-mc-java
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kn-mc-java
+  template:
+    metadata:
+      labels:
+        app: kn-mc-java
+    spec:
+      containers:
+      - name: kn-mc-java
+        image: itzg/minecraft-server
+        imagePullPolicy: Always
+        env:
+        - name: EULA
+          value: "TRUE"
+        - name: MOTD
+          value: "Clown MC"
+        - name: TYPE
+          value: "PAPER"
+        - name: INIT_MEMORY
+          value: "1G"
+        - name: MAX_MEMORY
+          value: "4G"
+        volumeMounts:
+        - name: mc-data
+          mountPath: /data
+      volumes:
+      - name: mc-data
+        persistentVolumeClaim:
+          claimName: mc-pvc

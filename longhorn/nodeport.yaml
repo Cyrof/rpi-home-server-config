@@ -1,0 +1,19 @@
+# This YAML defines a Kubnerates Service for exposing the Longhorn UI via a NodePort.
+apiVersion: v1
+kind: Service
+metadata: 
+  # Name of the Service
+  name: longhorn-ui-nodeport
+  # Namesace where the Service resides
+  namespace: longhorn-system
+spec:
+  # Selects pods with the lable "app: longhorn-ui" to route traffic to
+  selector:
+    app: longhorn-ui
+  # Defines the ports that the Service listens on.
+  ports:
+  - name: http
+    port: 8000 # Port on which the Service is accessible internally
+    nodePort: 30001 # NodePort through which the Service is exposed externally.
+  # Specifies the type of Service
+  type: NodePort

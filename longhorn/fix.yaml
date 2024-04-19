@@ -1,0 +1,12 @@
+# This YAML defines a Longhorn Setting object for managing deletion confirmation flag.
+# THis setting controls whether a confirmation prompt is required before deleting resources in Longhorn.
+apiVersion: longhorn.io/v1beta2
+kind: Setting
+metadata:
+  # Specifies the unique name of the Setting object.
+  name: deleting-confirmation-flag
+  # Indicates the namespace where the Setting object resides.
+  namespace: longhorn-system
+# Specifies the value of the deletion confirmation flag
+# When set to "true", it requires confirmation before deleting resources in Longhorn.
+value: "true"
