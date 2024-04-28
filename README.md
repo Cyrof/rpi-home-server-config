@@ -4,16 +4,16 @@ This repository contains YAML configuration files for setting up services on a R
 
 ## Configurations 
 
-### Longhorn 
+### [Longhorn](https://github.com/Cyrof/rpi-home-server-config/tree/main/longhorn) 
 
 - **Description:** YAML configuration files for deploying Longhorn, a distributed block storage system for Kubernetes.
 - **Purpose:** Provides persistent storage solutions for stateful applications running on the Kubernetes cluster.
 
-### Nginx Ingress
+### [Nginx Ingress](https://github.com/Cyrof/rpi-home-server-config/tree/main/nginx)
 - **Description:** Yaml Configuration files for deploygin NGINX Ingress Controller, which manages external access to services in the Kubernetes cluster.
 - **Purpose:** Routes incoming traffic to various services deployed on the Kubernetes cluster.
 
-### PaperMC Server 
+### [PaperMC Server](https://github.com/Cyrof/rpi-home-server-config/tree/main/minecraft-server)
 - **Description:** Customer configurations and YAML files for deploying a PaperMC Minecraft server using the [itzy-minecraft](https://github.com/itzg/docker-minecraft-server) docker image.
 - **Purpose:** Hosts a Minecraft server on the Raspberry Pi home server for gaming and entertainment purposes.
 
