@@ -1,7 +1,7 @@
 # Deployment configuration for Minecraft Java Edition server
 
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   # Metadata section for the Deployment
   name: kn-mc-java  # Name of the Deployment
@@ -44,14 +44,49 @@ spec:
           value: "1G" # Initial memory allocation
         - name: MAX_MEMORY
           value: "4G" # Maximun memory allocation
+        
+        readinessProbe:
+          exec:
+            command: [ "/usr/local/bin/mc-monitor", "status", "--host", "localhost" ]
+          initialDelaySeconds: 120
+          periodSeconds: 5
+          failureThreshold: 20
+        
+        livenessProbe:
+          exec:
+            command: [ "/usr/local/bin/mc-monitor", "status", "--host", "localhost"]
+          initialDelaySeconds: 180
+          periodSeconds: 60
 
         # Volume mounts to access data from PVC
         volumeMounts:
         - name: mc-data # Name of the volume
           mountPath: /data  # Mount path in the container
 
+      - name: backup
+        image: itzg/mc-backup
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          runAsUser: 1000
+        env:
+          - name: BACKUP_INTERVAL
+            value: "1hr"
+          - name: INITIAL_DELAY
+            value: "2m"
+          - name: PAUSE_IF_NO_PLAYERS
+            value: "true"
+        volumeMounts:
+          - mountPath: /data
+            name: mc-data
+            readOnly: true
+          - mountPath: /backups
+            name: backups
+
       # Volumes to be mounted in the pod
       volumes:
       - name: mc-data # Name of the volume
         persistentVolumeClaim:
           claimName: mc-pvc # Name of the PVC to mount
+      - name: backups
+        persistentVolumeClaim:
+          claimName: mc-backup-pvc
