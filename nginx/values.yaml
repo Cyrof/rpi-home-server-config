@@ -1,3 +1,11 @@
+# Configuration for Nginx installation using helm
+
 controller:
+  # configuration for the nginx controller component
+
   service:
-    loadBalancerIP: "192.168.86.38"
+    # Configuration for the service associated with the Nginx controller
+
+    # specify the IP address for the load balancer
+    loadBalancerIP: "192.168.86.38" # update this to your desired load balancer IP
+  

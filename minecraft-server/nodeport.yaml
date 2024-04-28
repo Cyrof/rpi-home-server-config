@@ -1,17 +1,27 @@
+# Service configuration for exposing Minecraft Server using NodePort
 apiVersion: v1
 kind: Service
 metadata:
+  # Metadata section for the service 
   labels:
-    app: kn-mc-java
-  name: mc-server-nodeport
-  namespace: mc-server
+    app: kn-mc-java # Label for identifying the application
+  name: mc-server-nodeport  # Name of the service 
+  namespace: mc-server  # Namespace where the service belongs 
+
 spec:
+  # Specification section for the service
+
+  # Ports to be exposed by the service
   ports:
-  - name: mc-server-nodeport
-    nodePort: 30002
-    port: 25565
-    protocol: TCP
-    targetPort: 25565
+  - name: mc-server-nodeport  # Name ofthe port
+    nodePort: 30002 # NodePort value for accessing the service externally
+    port: 25565 # Port number within the cluster
+    protocol: TCP # Protocol used (TCP in this case)
+    targetPort: 25565 # Port on the pod to forward traffic to 
+
+  # Selector to determine which pods will be targeted by this service 
   selector:
-    app: kn-mc-java
-  type: NodePort
+    app: kn-mc-java # Select pods with the specified label
+
+  # Type of this service, in this case, NodePort  
+  type: NodePort  # Exposes the service on each Node's IP at a static port

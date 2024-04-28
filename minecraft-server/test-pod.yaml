@@ -1,19 +1,32 @@
+# Pod configuration for accesssing data in a PersistentVolumeClaim (PVC)
+
 apiVersion: v1
 kind: Pod
 metadata:
-  name: temp-pod
-  namespace: mc-server
+  # Metadata section for the Pod
+  name: temp-pod  # Name of the Pod
+  namespace: mc-server  # Namespace where the Pod belongs
+
 spec:
+  # Specification section for the Pod
+
+  # Containers running in the Pod
   containers:
-  - name: temp-pod
-    image: nginx:stable-alpine
-    imagePullPolicy: IfNotPresent
+  - name: temp-pod  # Name of the container
+    image: nginx:stable-alpine  # Base image for the container    
+    imagePullPolicy: IfNotPresent # Policy for pulling the image, if not present locally
+
+    # Volume mounts to access data from PVC
     volumeMounts:
-    - name: mc-vol
-      mountPath: /data
+    - name: mc-vol  # Name of the volume
+      mountPath: /data  # Mount path in the container 
+
+    # Ports to expose from the container
     ports:
-    - containerPort: 80
+    - containerPort: 80 # Port exposed by the container
+
+  # Volumes to be mounted in the Pod
   volumes:
-  - name: mc-vol
+  - name: mc-vol  # Name of the volume
     persistentVolumeClaim:
-      claimName: mc-pvc
+      claimName: mc-pvc # Name of the PVC to mount

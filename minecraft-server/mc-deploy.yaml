@@ -1,39 +1,57 @@
+# Deployment configuration for Minecraft Java Edition server
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: kn-mc-java
-  namespace: mc-server
+  # Metadata section for the Deployment
+  name: kn-mc-java  # Name of the Deployment
+  namespace: mc-server  # Namespace where the Deployment belongs
   labels:
-    app: kn-mc-java
+    app: kn-mc-java # Labels for identifying the application
+
 spec:
-  replicas: 1
+  # Specification section for the Deployment
+
+  replicas: 1 # Number of replicase (instances) of the pod to run
+
   selector:
+    # Selector to determine which pods are controlled by this Deployment
     matchLabels:
-      app: kn-mc-java
+      app: kn-mc-java # Labels to match pods controlled by this Deployment
   template:
+    # Template for creating pods managed by this Deployment
     metadata:
       labels:
-        app: kn-mc-java
+        app: kn-mc-java # Labels for identifying pods creted from this template
+
     spec:
+      # Specification section for the pods created from this template
+
       containers:
-      - name: kn-mc-java
-        image: itzg/minecraft-server
-        imagePullPolicy: Always
+      - name: kn-mc-java  # Name of the container
+        image: itzg/minecraft-server  # Docker image for the Minecraft server
+        imagePullPolicy: Always # Policy for pulling the image (always pull)
+
+        # Environment variables for configuring the Minecraft server 
         env:
         - name: EULA
-          value: "TRUE"
+          value: "TRUE" # End User License Agreement acceptance
         - name: MOTD
-          value: "Clown MC"
+          value: "Clown MC" # Name of the Minecraft Server
         - name: TYPE
-          value: "PAPER"
+          value: "PAPER"  # Server type
         - name: INIT_MEMORY
-          value: "1G"
+          value: "1G" # Initial memory allocation
         - name: MAX_MEMORY
-          value: "4G"
+          value: "4G" # Maximun memory allocation
+
+        # Volume mounts to access data from PVC
         volumeMounts:
-        - name: mc-data
-          mountPath: /data
+        - name: mc-data # Name of the volume
+          mountPath: /data  # Mount path in the container
+
+      # Volumes to be mounted in the pod
       volumes:
-      - name: mc-data
+      - name: mc-data # Name of the volume
         persistentVolumeClaim:
-          claimName: mc-pvc
+          claimName: mc-pvc # Name of the PVC to mount

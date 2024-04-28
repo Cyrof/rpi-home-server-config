@@ -1,11 +1,21 @@
+# Persistent Volume Claim (PVC) configuration for Minecraft Server
 apiVersion: v1
 kind: PersistentVolumeClaim
+
 metadata:
-  name: mc-pvc
-  namespace: mc-server
+  # Metadata section for PVC
+  name: mc-pvc  # Name of the PersistentVolumeClaim
+  namespace: mc-server  # Namespace where the PVC belongs 
+
 spec:
+  # Specification sections for the PVC
+
+  # Access modes define how the volume can be mounted.
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteOnce # Allows read and write access to a single node
+
+  # Resources requested by the PVC
   resources:
     requests:
-      storage: 5Gi
+      storage: 5Gi  # Requesting 5 gigabytes of storage for the PVC
+
