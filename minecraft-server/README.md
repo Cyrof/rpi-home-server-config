@@ -8,6 +8,7 @@ This folder contains configuration files for deploying and managing a Minecraft 
 2. [**mc-pvc.yaml**](https://github.com/Cyrof/rpi-home-server-config/blob/main/minecraft-server/mc-pvc.yaml): PersistentVolumeClaim (PVC) configuration for storing Minecraft server data.
 3. [**nodeport.yaml**](https://github.com/Cyrof/rpi-home-server-config/blob/main/minecraft-server/nodeport.yaml): Service configuration for exposing the Minecraft server using NodePort.
 4. [**test-pod.yaml**](https://github.com/Cyrof/rpi-home-server-config/blob/main/minecraft-server/test-pod.yaml): Pod configuration for accessing data in the PVC temporarily.
+5. [**mc-pvc-backup.yaml**](https://github.com/Cyrof/rpi-home-server-config/blob/main/minecraft-server/mc-pvc-backup.yaml) PersistentVolumeClaim (PVC) configuration for Minecraft serverr backups
 
 ## Usage:
 

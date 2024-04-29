@@ -45,18 +45,20 @@ spec:
         - name: MAX_MEMORY
           value: "4G" # Maximun memory allocation
         
+        # Readiness probe to check if the container is ready to receive traffic
         readinessProbe:
           exec:
             command: [ "/usr/local/bin/mc-monitor", "status", "--host", "localhost" ]
-          initialDelaySeconds: 120
-          periodSeconds: 5
-          failureThreshold: 20
+          initialDelaySeconds: 120  # Number of seconds after the container has started before readiness probes are initiated
+          periodSeconds: 5  # How often the perform the probe
+          failureThreshold: 20  # Minimum consecutive failures for the probe to be considered failed
         
+        # Liveness probe to check if the container is still running 
         livenessProbe:
           exec:
             command: [ "/usr/local/bin/mc-monitor", "status", "--host", "localhost"]
-          initialDelaySeconds: 180
-          periodSeconds: 60
+          initialDelaySeconds: 180 #  Number of seconds after the container has started before liveness probes are initiated
+          periodSeconds: 60 # How often to perform the probe
 
         # Volume mounts to access data from PVC
         volumeMounts:
@@ -70,11 +72,11 @@ spec:
           runAsUser: 1000
         env:
           - name: BACKUP_INTERVAL
-            value: "1hr"
+            value: "1hr"  # Backup interval
           - name: INITIAL_DELAY
-            value: "2m"
+            value: "2m" # Initial delay before starting backup
           - name: PAUSE_IF_NO_PLAYERS
-            value: "true"
+            value: "true" # Pause backup if no players are online (should disable due to readiness conflict)
         volumeMounts:
           - mountPath: /data
             name: mc-data
