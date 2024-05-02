@@ -69,14 +69,20 @@ spec:
         image: itzg/mc-backup
         imagePullPolicy: IfNotPresent
         securityContext:
-          runAsUser: 1000
+          runAsUser: 0
         env:
           - name: BACKUP_INTERVAL
             value: "1hr"  # Backup interval
           - name: INITIAL_DELAY
-            value: "2m" # Initial delay before starting backup
+            value: "3m" # Initial delay before starting backup
           - name: PAUSE_IF_NO_PLAYERS
             value: "true" # Pause backup if no players are online (should disable due to readiness conflict)
+          - name: PLAYERS_ONLINE_CHECK_INTERVAL
+            value: "5m"
+          - name: BACKUP_METHOD
+            value: "tar"
+          - name: PRUNE_BACKUPS_DAYS
+            value: "5"
         volumeMounts:
           - mountPath: /data
             name: mc-data

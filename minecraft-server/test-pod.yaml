@@ -20,13 +20,21 @@ spec:
     volumeMounts:
     - name: mc-vol  # Name of the volume
       mountPath: /data  # Mount path in the container 
+    - name: mc-backup-vol
+      mountPath: /backup
 
     # Ports to expose from the container
     ports:
     - containerPort: 80 # Port exposed by the container
+
+  nodeSelector:
+    kubernetes.io/hostname: knode3
 
   # Volumes to be mounted in the Pod
   volumes:
   - name: mc-vol  # Name of the volume
     persistentVolumeClaim:
       claimName: mc-pvc # Name of the PVC to mount
+  - name: mc-backup-vol
+    persistentVolumeClaim: 
+      claimName: mc-backup-pvc
