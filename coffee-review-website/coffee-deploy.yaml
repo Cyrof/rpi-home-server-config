@@ -1,0 +1,35 @@
+# Define the API version and kind of Kubernetes resource being created
+apiVersion: apps/v1
+kind: StatefulSet
+
+# Metadata section containing information abou the StatefulSet
+metadata:
+  name: coffee-review-website # Name of the StatefulSet
+  namespace: coffee-review  # Namespace where the StatefulSet resides
+  labels:
+    app: coffee-review-website  # Labels to identify the application 
+
+# Specification section defining the desired state of the StatefulSet
+spec:
+  replicas: 1 # Number of replicas of the StatefulSet to run 
+
+  # Selector to match Pods controlled by this StatefulSet
+  selector:
+    matchLabels:
+      app: coffee-review-website
+
+  # Template for creating Pods
+  template:
+    metadata:
+      labels:
+        app: coffee-review-website #  Labels for Pods created from this template
+    spec:
+      restartPolicy: Always # Restart polcicy for the Pods
+      containers:
+      - name: backend # Name of the container
+        image: cyrof/coffee_review:latest # Docker image for the container
+        imagePullPolicy: Always # Policy for pulliing the container image
+        ports:
+          - name: http # Name of the port
+            containerPort: 4000 # Port number to expose within the container 
+

@@ -1,0 +1,17 @@
+# Ansible playbook for updating and upgrading apt packages on all hosts
+
+# Define the hosts on which the playbook will run
+- hosts: all
+
+  # Indicate that tasks will execute with elevated privileges
+  become: true
+
+  # List of tasks to be executed on the hosts
+  tasks:
+
+    # Task to update and upgrade apt packages
+  - name: Update and Upgrade apt packages
+    apt:
+      upgrade: yes  # Upgrade all packages to the latest version
+      update_cache: yes # Update to apt package cache
+      cache_valid_time: 86400 # Set the cache valid time to one day (in seconds)

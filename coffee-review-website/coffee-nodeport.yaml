@@ -1,0 +1,21 @@
+# Define the API version and kind of Kubernetes resource being created
+apiVersion: v1
+kind: Service
+
+# Metadata section containing information about the Service
+metadata:
+  labels:
+    app: coffee-review-website  # Labels to identify the application
+  name: coffee-nodeport # Name of the Service
+  namespace: coffee-review  # Namespace where the Service resides
+
+# Specification sectino defining the desired state of the Service
+spec:
+  ports:
+  - name: coffee-nodeport # Name of the port
+    nodePort: 30003 # Node port number for the Service
+    port: 4000  # Port number exposed by the Service
+    targetPort: 4000  # Port number on the Pods to forward traffic to 
+  selector:
+    app: coffee-review-website  # Selector to match Pods controlled by the Service
+  type: NodePort  # Type of Service (NodePort)

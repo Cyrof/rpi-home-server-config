@@ -1,0 +1,24 @@
+# Define the API version and kind of Kubernetes resource being created
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+
+# Metadata section containing information about the Ingress
+metadata:
+  name: coffee-review-ingress # Name of the Ingress
+  namespace: coffee-review  # Namespace where the Ingress resides
+  annotations:
+
+# Specification section defining the desired state of the Ingress
+spec:
+  ingressClassName: nginx # Class of the Ingress
+  rules:  # List of rules for routing traffic
+  - host: "kn.coffee.review"  # Hostname for which the Ingress should route traffic
+    http: # Http configuration for the rule 
+      paths:  # List of HTTP paths
+      - pathType: Prefix  # Type of path matching 
+        path: "/" # Path to match
+        backend:  # Backend service to route traffic to 
+          service:  # Service backend configuration
+            name: coffee-nodeport # Name of the backend Service
+            port: # Port configuration for the backend Service
+              number: 4000  # Port number to route traffic to 
