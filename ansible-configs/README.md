@@ -1,6 +1,6 @@
 # Ansible playbooks 
 
-This folde rcontains YAML configuration files used as playbooks for Ansible automation tool.
+This folder contains YAML configuration files used as playbooks for Ansible automation tool.
 
 ## Purpose: 
 
