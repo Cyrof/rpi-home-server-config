@@ -25,6 +25,9 @@ This repository contains YAML configuration files for setting up services on a R
 - **Description:** Configurations for a coffee review website.
 - **Purpose:** Deploy a website for reviewing coffee products on the Raspberry Pi home server.
 
+### [WOL Website](https://github.com/Cyrof/rpi-home-server-config/tree/main/wakeonlan)
+- **Description:** Configuration files for deploying a Wake-on-LAN website.
+- **Purpose:** Allows user to send Wake-on-LAN packets to wake up their main PC remotely.
 
 ## Usage
 
