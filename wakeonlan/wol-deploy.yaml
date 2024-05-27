@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: StatefulSet
+
+metadata: 
+  name: wol-website # Name of the StatefulSet
+  namespace: wol  # Namespace where the StatefulSet resides
+  labels:
+    app: wol-website  # Label identifying the application 
+
+spec:
+  replicas: 1 # Number of replicas for the StatefulSet
+  selector:
+    matchLabels:
+      app: wol-website  # Selectors to match pods controlled by this StatefulSet
+  template: 
+    metadata:
+      labels:
+        app: wol-website # Labels applied to pods created from this template
+    spec:
+      hostNetwork: true # Use the host network namespace for the pods
+      restartPolicy: Always # Restart policy for the pods
+      containers:
+      - name: server  # Name of the container 
+        image: cyrof/remotewakeserver:latest  # Docker image used for the container 
+        imagePullPolicy: Always # Policy for pulling the container image
+        envFrom:
+          - secretRef: 
+              name: wol-secret  # Name of the Secret resource containing environment variables
+        ports: 
+          - name: http  # Name of the port
+            containerPort: 8000 # Port number exposed by the container
