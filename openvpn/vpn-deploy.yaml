@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: openvpn
+  namespace: openvpn
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openvpn
+  template:
+    metadata:
+      labels:
+        app: openvpn
+    spec:
+      restartPolicy: Always
+      containers:
+      - name: openvpn
+        image: mjenz/rpi-openvpn
+        imagePullPolicy: Always
+        # securityContext:
+        #   privileged: true
+        #   capabilities:
+        #     add: ["NET_ADMIN", "SYS_MODULE"]
+        volumeMounts:
+        - mountPath: /etc/openvpn
+          name: openvpn-data
+        ports:
+        - containerPort: 1194
+          protocol: UDP
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            if [ ! -f /etc/openvpn/ovpn_env.sh ]; then
+              ovpn_genconfig -u udp://$(hostname -i)
+              ovpn_initpki nopass
+            fi
+            ovpn_run
+      volumes:
+      - name: openvpn-data
+        persistentVolumeClaim:
+          claimName: openvpn-pvc
