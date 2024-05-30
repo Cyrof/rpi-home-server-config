@@ -14,7 +14,7 @@ This repository contains YAML configuration files for setting up services on a R
 - **Purpose:** Routes incoming traffic to various services deployed on the Kubernetes cluster.
 
 ### [PaperMC Server](https://github.com/Cyrof/rpi-home-server-config/tree/main/minecraft-server)
-- **Description:** Customer configurations and YAML files for deploying a PaperMC Minecraft server using the [itzy-minecraft](https://github.com/itzg/docker-minecraft-server) docker image.
+- **Description:** Custom configurations and YAML files for deploying a PaperMC Minecraft server using the [itzy-minecraft](https://github.com/itzg/docker-minecraft-server) docker image.
 - **Purpose:** Hosts a Minecraft server on the Raspberry Pi home server for gaming and entertainment purposes.
 
 ### [Ansible Config](https://github.com/Cyrof/rpi-home-server-config/tree/main/ansible-configs)

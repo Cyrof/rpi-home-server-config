@@ -82,7 +82,7 @@ spec:
           - name: BACKUP_METHOD
             value: "tar"
           - name: PRUNE_BACKUPS_DAYS
-            value: "5"
+            value: "2"
         volumeMounts:
           - mountPath: /data
             name: mc-data
