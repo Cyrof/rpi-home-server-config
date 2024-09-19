@@ -1,0 +1,9 @@
+# Defining the service type as NodePort to expose the applicatino on a specific port externally
+service:
+  type: NodePort # This allows the service to be asseccible via an external network on a specific port
+
+  ports: 
+    # Configuring the HTTP port for the service
+    http: # HTTP protocol for the service
+      nodePort: 30005 # Assigning port 30005 for external access in the service
+
