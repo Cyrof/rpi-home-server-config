@@ -58,7 +58,7 @@ This command will attempt to ping all hosts defined in your inventory file. If t
 To run the playbooks in the current Git repository, navigate to the folder containing the playbooks. The playbooks for Ansible are located under the `ansible-configs` folder. Use the following command to execute the desired playbook. </br>
 For Example:
 ```bash 
-ansible-playbook -i ~/ansible/hosts ansible-configs/update-nodes.yaml
+ansible-playbook -i ~/ansible/hosts ansible-configs/update-nodes-new.yaml -k
 ```
 Ensure the inventory file is correctly configured before running the playbook.
 
