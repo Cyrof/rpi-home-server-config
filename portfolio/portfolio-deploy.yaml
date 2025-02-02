@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: StatefulSet
+
+metadata: 
+  name: knfolio
+  namespace: folio
+  labels:
+    app: knfolio
+  
+spec: 
+  replicas: 1
+
+  selector: 
+    matchLabels: 
+      app: knfolio
+  
+  template: 
+    metadata:
+      labels:
+        app: knfolio
+
+    spec:
+      containers: 
+      - name: fullstack
+        image: cyrof/kn-folio:latest
+        imagePullPolicy: Always
+        ports: 
+        - containerPort: 3000
+        env: 
+        - name: EMAIL_USER
+          valueFrom: 
+            secretKeyRef:
+              name: knfolio-secrets
+              key: EMAIL_USER
+        - name: EMAIL_PASS
+          valueFrom:
+            secretKeyRef:
+              name: knfolio-secrets
+              key: EMAIL_PASS
+        - name: RECIPIENT_EMAIL
+          valueFrom: 
+            secretKeyRef: 
+              name: knfolio-secrets
+              key: RECIPIENT_EMAIL
+        
+      #   volumeMounts:
+      #   - name: data-volume
+      #     mountPath: /usr/src/app/app/data/data.json
+      #     subPath: data.json
+      # volumes:
+      # - name: data-volume
+      #   configMap: 
+      #     name: knfolio-data
+      #     items:
+      #     - key: data.json
+      #       path: data.json
+        
