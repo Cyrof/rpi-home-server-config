@@ -1,0 +1,21 @@
+controller: 
+  # run daemonset so every node including master node
+  daemonset:
+    enabled: true
+
+  # Make nginx the default ingress class
+  ingressClassResource:
+    enabled: true
+    name: nginx
+    default: true
+
+  # bind container to host ports since not using metalLB
+  hostPort:
+    http: 80
+    https: 443
+
+  service:
+    type: ClusterIP
+
+admissionWebhooks:
+  enabled: true

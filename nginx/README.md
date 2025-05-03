@@ -1,21 +1,36 @@
 # Nginx Deployment Configuration
+This folder contains a custom `nginx-values.yaml` file to configure the NGINX Ingress Controller a bare-metal k3s cluster without MetalLB.
 
-## Additional Configuration (values.yaml)
+## Configuration Details 
+- **controller.daemonset.enabled: true**
+    - Runs the Ingress Cibtrikker as a DaemonSet (one pod per node).
+- **controller.ingressClassResource**
+    - Declares the `nginx` IngressClass and makes it the default.
+- **controller.hostPort.http: 80 & controller.hostPort.https:443**
+    - Binds host ports 80 and 443 to each Ingress Controller pod, allowing direct traffic without an external LoadBalancer.
+- **controller.service.type: ClusterIP**
+    - Uses a ClusterIP service when hostPort is enabled.
+- **admissionWebhooks.enabled: true**
+    - Enables webhook support for CRD validation.
 
-This folder contains a customer 'values.yaml' file used to configure the Nginx deployment.
+## Installation
+Add the ingress-nginx Helm repository and install (or upgrade) with your custom values:
+``` bash
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
 
-### Configuration Details: 
-
-- **controller.service.loadBalancerIP:** Specifies the IP address for the load balancer associated with the Nginx controller service.
-
-### Usage: 
-
-To deploy Nginx with these custom configurations, use Helm and provide the 'values.yaml' file: 
-
-```bash 
-$ helm install nginx stable/nginx-ingress -f values.yaml
+helm install ingress-nginx ingress-nginx/ingress-nginx -n ingress-nginx --create-namespace -f nginx-values.yaml
 ```
+> **Note**: If you named your file `nginx-value.yaml`, replaces `-f nginx-values.yaml` accordingly.
 
-### Notes:
+## Usage
+1. **DNS**: Point your domain (e.g., `portfolio.example.com`) A record to the IP of any cluster node.
+2. **Ingress**: Create Ingress resources with the annotation:
+```yaml 
+kubernetes.io/ingress.class: nginx
+```
+3. **Test**: `curl http://portfolio.exmaple.com` should reach your service through NGINX.
 
-This README provides a simple overview of the purpose of the 'values.yaml' file and how it can be used to configure the Nginx deployment. Feel free to adjust it further to fit your needs!
+## Notes
+- This configuration uses `hostPort` and does not require MetalLB or a cloud LoadBalancer.
+- For TLS, add a tls: section and reference a Kubernetes `Secret` containing your certificate and key.
