@@ -1,18 +1,34 @@
 controller: 
   # run daemonset so every node including master node
-  daemonset:
-    enabled: true
+  kind: DaemonSet
 
-  # Make nginx the default ingress class
+  # bind container to host ports since not using metalLB
+  hostPort:
+    enabled: true
+    http: 80
+    https: 443
+
+  # clear default affinity (amd64 contrainst)
+  affinity: {}
+
+  # allow schedule in ARM64
+  nodeSelector:
+    kubernetes.io/arch: "arm64"
+    kubernetes.io/os: "linux"
+
   ingressClassResource:
     enabled: true
     name: nginx
     default: true
 
-  # bind container to host ports since not using metalLB
-  hostPort:
-    http: 80
-    https: 443
+  # allow scheduling on master 
+  tolerations:
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
 
   service:
     type: ClusterIP
