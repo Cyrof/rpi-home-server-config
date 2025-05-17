@@ -4,3 +4,6 @@
 [submodule "wakeonlan/wol"]
 	path = wakeonlan/wol
 	url = https://github.com/Cyrof/RemoteWakeServer.git
+[submodule "portfolio/knfolio"]
+	path = portfolio/knfolio
+	url = https://github.com/Cyrof/kn-folio.git

@@ -42,16 +42,3 @@ spec:
             secretKeyRef: 
               name: knfolio-secrets
               key: RECIPIENT_EMAIL
-        
-      #   volumeMounts:
-      #   - name: data-volume
-      #     mountPath: /usr/src/app/app/data/data.json
-      #     subPath: data.json
-      # volumes:
-      # - name: data-volume
-      #   configMap: 
-      #     name: knfolio-data
-      #     items:
-      #     - key: data.json
-      #       path: data.json
-        
