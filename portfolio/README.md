@@ -39,7 +39,7 @@ This folder contains all the kubernetes manifests needed to deploy my full-stack
 - **Ingress rules**
     - Routes `Host: knfolio.dev` and path `/` to `knfolio-service:3000`.
 - **Secret type: Opaque**
-    - Stores `EMAIL_USER`, `EMAIL_PASS`, and `RECIPIENT_EMAIL` for the app&ndash;see the [knfolio README.md](./knfolio/README.md) for why they're required.
+    - Stores `EMAIL_USER`, `EMAIL_PASS`, and `RECIPIENT_EMAIL` for the app&ndash;see the [knfolio README.md](https://github.com/Cyrof/kn-folio) for why they're required.
 
 ## Installation
 ### 1. Create namespace
@@ -73,5 +73,5 @@ kubectl apply -f portfolio-ingress.yaml
 ## Notes
 - Make sure your DNS A-record for `knfolio.dev` points to your cluster's external IP.
 - cert-manager must be installed with a `letsencrypt-http01` ClusterIssuer for automatic TLS.
-- The `knfolio-secrets` values come from the [knfolio README](./knfolio/README.md).
+- The `knfolio-secrets` values come from the [knfolio README](https://github.com/Cyrof/kn-folio).
 - You can scale `spec.replicas` in `porfolio-deployment.yaml` if you need more instances.
