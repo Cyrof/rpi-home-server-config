@@ -7,3 +7,6 @@
 [submodule "portfolio/knfolio"]
 	path = portfolio/knfolio
 	url = https://github.com/Cyrof/kn-folio.git
+[submodule "porkbun-dns-updater/porkbun-dns"]
+	path = porkbun-dns-updater/porkbun-dns
+	url = https://github.com/Cyrof/Porkbun-dns.git
