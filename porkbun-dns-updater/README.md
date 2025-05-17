@@ -32,7 +32,7 @@ data:
 > **Tip:** To supply plaintext values instead, switch `data:` -> `stringData` and drop the base64 encoding.
 
 For more on the upodater script and its requirementsm see the submodule's README:
-[porkbun-dns/README](./porkbun-dns/)
+[porkbun-dns/README](https://github.com/Cyrof/Porkbun-dns)
     
 ## Installation
 ### 1. Create the namespace (if missing):
