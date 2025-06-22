@@ -70,6 +70,17 @@ kubectl apply -f portfolio-ingress.yaml
     curl https://knfolio.dev
     ```
 
+## Updating the App
+To update the portfolio (e.g., after pushing a new `:latest` image or updating secrets), simply trigger a restart:
+```bash 
+kubectl rollout restart statefullset knfolio -n folio
+```
+This will:
+- Restart the `knfolio` pod
+- Pull the updated image (if changed)
+- Reload secrets and config
+> Pro tip: You can also annotate the pod template or use GitOps to trigger automated redeploys.
+
 ## Notes
 - Make sure your DNS A-record for `knfolio.dev` points to your cluster's external IP.
 - cert-manager must be installed with a `letsencrypt-http01` ClusterIssuer for automatic TLS.
