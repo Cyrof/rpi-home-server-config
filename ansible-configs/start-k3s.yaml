@@ -1,0 +1,108 @@
+- name: Start k3s server and uncordon
+  hosts: k3s_server
+  become: yes
+  gather_facts: no
+  vars:
+    kubeconfig_path: /etc/rancher/k3s/k3s.yaml
+    kubectl_path: /usr/local/bin/kubectl
+  pre_tasks:
+    - name: Check if server is up (SSH reachable)
+      delegate_to: localhost
+      become: no
+      ansible.builtin.wait_for:
+        host: "{{ hostvars[inventory_hostname].ansible_host | default(inventory_hostname) }}"
+        port: 22
+        state: started
+        timeout: 5
+      register: ssh_up
+      ignore_errors: yes
+
+    - name: Skip this host (server not reachable yet)
+      ansible.builtin.meta: end_host
+      when: ssh_up is failed
+
+    - name: Gather facts (only when server is up)
+      ansible.builtin.setup:
+
+  tasks:
+    - name: Ensure k3s server is running
+      ansible.builtin.systemd:
+        name: k3s
+        state: started
+        enabled: yes
+
+    - name: Wait for kubernetes API to be ready
+      ansible.builtin.command: >
+        {{ kubectl_path }} --kubeconfig {{ kubeconfig_path }} get --raw=/readyz
+      register: apiready
+      retries: 30
+      delay: 5
+      until: apiready.rc == 0
+
+    - name: Uncordon server node
+      ansible.builtin.command: >
+        {{ kubectl_path }} --kubeconfig {{ kubeconfig_path }} uncordon {{ ansible_hostname }}
+
+- name: Start k3s agents, wait Ready, and uncordon
+  hosts: k3s_agents
+  become: yes
+  gather_facts: no
+  serial: 1
+  vars:
+    k3s_server_host: "{{ groups['k3s_server'][0] }}"
+    kubeconfig_path: /etc/rancher/k3s/k3s.yaml
+    kubectl_path: /usr/local/bin/kubectl
+  pre_tasks:
+    - name: Check if agent is up (SSH reachable)
+      delegate_to: localhost
+      become: no
+      ansible.builtin.wait_for:
+        host: "{{ hostvars[inventory_hostname].ansible_host | default(inventory_hostname) }}"
+        port: 22
+        state: started
+        timeout: 5
+      register: ssh_up
+      ignore_errors: yes
+
+    - name: Skip this host (agent not reachable yet)
+      ansible.builtin.meta: end_host
+      when: ssh_up is failed
+
+    - name: Gather facts (only when agent is up)
+      ansible.builtin.setup:
+
+  tasks:
+    - name: Cancel any scheduled shutdown (if previously set)
+      ansible.builtin.shell: shutdown -c || true
+      changed_when: false
+
+    - name: Ensure time sync is running (avoid TLS time skew)
+      ansible.builtin.systemd:
+        name: systemd-timesyncd
+        state: started
+        enabled: yes
+      failed_when: false
+
+    - name: Ensure k3s-agent is running
+      ansible.builtin.systemd:
+        name: k3s-agent
+        state: started
+        enabled: yes
+
+    - name: Wait until node becomes Ready (checked from server)
+      ansible.builtin.command: >
+        {{ kubectl_path }} --kubeconfig {{ kubeconfig_path }}
+        get node {{ ansible_hostname }}
+        -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
+      register: ready_out
+      delegate_to: "{{ k3s_server_host }}"
+      become: yes
+      retries: 36
+      delay: 5
+      until: ready_out.stdout == "True"
+
+    - name: Uncordon agent node (from server)
+      ansible.builtin.command: >
+        {{ kubectl_path }} --kubeconfig {{ kubeconfig_path }} uncordon {{ ansible_hostname }}
+      delegate_to: "{{ k3s_server_host }}"
+      become: yes
