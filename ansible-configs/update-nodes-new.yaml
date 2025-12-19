@@ -18,4 +18,3 @@
       - name: Reboot if needed
         reboot:
             reboot_timeout: 300 # Maximun wait time for system to reboot (in seconds)
-
