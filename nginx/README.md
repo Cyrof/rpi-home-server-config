@@ -1,38 +1,21 @@
 # Nginx Deployment Configuration
-This folder contains a custom `nginx-values.yaml` file to configure the NGINX Ingress Controller a bare-metal k3s cluster without MetalLB.
+This folder contains a custom `nginx-values.yaml` used to deploy `ingress-nginx` on a bare-metal k3s cluster without **MetalLB**, using a single edge node + NodePort + router port-forwarding.
 
-## Configuration Details 
-- **controller.kind: DaemonSet**
-    - Runs the Ingress Controller as a DaemonSet (one pod per node, including master).
-- **controller.hostPort.enabled: true**
-    - Enables binding of host ports 80/443 to each Ingress Controller pod.
-- **controller.hostPort.http: 80 & controller.hostPort.https: 443**
-    - Specific host ports to bind for HTTP and HTTPS traffic.
-- **controller.affinity: {}
-    - Clears any default affinity contrainsts (e.g., AMD64-only requirements).
-- **controller.nodeSelector**
-    - Ensures scheduling only on ARM64 Linux nodes:
-        ``` yaml
-        kubernetes.io/arch: "arm64"
-        kubernetes.io/os: "linux"
-        ```
-- **controller.ingressClassResource**
-    - Declares the `nginx` IngressClass and make it the default.
-- **controller.tolerations**
-    - Allows pods to schedule on master and control-plane nodes:
-        ``` yaml
-        - key: "node-role.kubernetes.io/master"
-          operator: "Exists"
-          effect: "NoSchedule"
-        - key: "node-role.kubernetes.io/control-plane"
-          operator: "Exists"
-          effect: "NoSchedule"
-        ```
-- **controller.service.type: ClusterIP**
-    - Uses a ClusterIP service with hostPort enabled.
-- **admissionWebhooks.enabled: true**
-    - Enabled webhook support for CRD validation.
+This setup is designed to be robust, predictable, and Kubernetes-aligned, while working within home / bare-metal networking contraints.
 
+## Design Summary
+- Ingress controller runs as a single instance
+- Scheduled on a dedicated edge node using labels
+- Exposed externally via NodePort
+- Router forwards ports 80 / 443 to the edge node
+- Other workloads remain free to schedule on any node
+
+## Node Preparation 
+Label the chosen edge node:
+```bash
+kubectl label node knode1 role=edge --overwrite
+```
+This lable is used only to place the ingress controller and does not restrict other workloads from running on the node.
 
 ## Installation
 Add the ingress-nginx Helm repository and install (or upgrade) with your custom values:
@@ -44,24 +27,32 @@ helm install ingress-nginx ingress-nginx/ingress-nginx \
     -n ingress-nginx \
     --create-namespace \
     -f nginx-values.yaml \
-    --set controller.kind=DaemonSet \
-    --set controller.hostPort.enabled=true
 ```
 > **Note**: If you named your file `nginx-value.yaml`, replace `-f nginx-values.yaml` accordingly.
 
-## Usage
-1. **DNS**: Point your domain (e.g., `portfolio.example.com`) A record to the IP of any cluster node.
-2. **Ingress**: Create Ingress resources with the annotation:
-```yaml 
-kubernetes.io/ingress.class: nginx
+## Router Configuration
+Configure router port forwarding to the edge node:
+| WAN Port | Target Node | Target Port |
+| --- | --- | --- |
+| 80 | knode1 | NodePort (HTTP) |
+|  443 | knode1 | NodePort (HTTPS) |
+
+## DNS 
+Point your domain to your public address:
+```cpp
+<domain.name> -> <public-ip>
 ```
-3. **Test**: 
-    ``` yaml
-    curl http://portfolio.exmaple.com
-    ```
-    should return a `404 not found` or your default backend response.
+
+## Usage
+Ingress resources should reference the `nginx` ingress class:
+```yaml
+spec:
+  ingressClassName: nginx
+```
+Once deployed, applications can be accessed via their configured hostnames.
 
 ## Notes
-- This configuration uses `hostPort` and does not require MetalLB or a cloud LoadBalancer.
-- To re-enabled a default backend, set `defaultBackend.enabled: true` and overrise `defaultBackend.image` to a multi-arch registry.
-- For TLS, add a `tls:` section and reference a Kubernetes `Secret` containing your certificate and key.
+- This setup avoids `hostNetwork` and `hostPort`
+- No cloud load balancer or MetalLB is required
+- The edge node remains schedulable for other workloads
+- The configuration can be migrated to MetalLB in the future without changing application manifests
