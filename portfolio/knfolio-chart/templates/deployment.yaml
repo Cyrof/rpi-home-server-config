@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: knfolio
+  labels:
+    app: knfolio
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: knfolio
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: knfolio
+    spec:
+      containers:
+        - name: fullstack
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.targetPort }}
+          env:
+            - name: EMAIL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret.name }}
+                  key: EMAIL_USER
+            - name: EMAIL_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret.name }}
+                  key: EMAIL_PASS
+            - name: RECIPIENT_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret.name }}
+                  key: RECIPIENT_EMAIL
+      readinessProbe:
+        httpGet:
+          path: /
+          port: {{ .Values.service.targetPort }}
+        initialDelaySeconds: 5
+        periodSeconds: 10
+      livenessProbe: 
+        httpGet:
+          path: /
+          port: {{ .Values.service.targetPort }}
+        initialDelaySeconds: 20
+        periodSeconds: 20
