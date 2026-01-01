@@ -1,8 +1,8 @@
 [submodule "coffee-review-website/coffee"]
-	path = coffee-review-website/coffee
+	path = archive/coffee-review-website/coffee
 	url = https://github.com/Cyrof/coffee-review.git
 [submodule "wakeonlan/wol"]
-	path = wakeonlan/wol
+	path = archive/wakeonlan/wol
 	url = https://github.com/Cyrof/RemoteWakeServer.git
 [submodule "portfolio/knfolio"]
 	path = portfolio/knfolio
@@ -10,3 +10,7 @@
 [submodule "porkbun-dns-updater/porkbun-dns"]
 	path = porkbun-dns-updater/porkbun-dns
 	url = https://github.com/Cyrof/Porkbun-dns.git
+[submodules "coffee-review-website"]
+	path = archive/coffee-review-website/
+[submodules "wakeonlan"]
+	path = archive/wakeonlan/
