@@ -1,46 +1,131 @@
-# Raspberry Pi Home Server Configurations
+# CyroStack
 
-This repository contains YAML configuration files for setting up services on a Raspberry Pi-based home server. These configuration are tailored for a Kubernetes cluster manage by k3s on Raspberry Pi.
+This repository documents and manages my **self-hosted Raspberry Pi Kubernetes (k3s) cluster**.
+It serves as the **platform-level infrastructure repo**, covering cluster bootstrap, ingress, certificates, DNS updates, and deployed applications.
 
-## Configurations 
+The goal of this repository is **clarity and reproducibility**:
+- what runs in Kubernetes
+- what runs directly on nodes 
+- which Raspberry Pi handles what role 
 
-### [Longhorn](https://github.com/Cyrof/rpi-home-server-config/tree/main/longhorn) 
+## Cluster Overview
+- **Orchestrator:** k3s
+- **Hardware:** Raspberry Pi cluster
+- **Networking:** Home LAN + external access via dynamic DNS
+- **Ingress:** NGINX Ingress Controller
+- **Certificates:** cert-manager (self-hosted)
+- **Configuration Management:** Ansible 
 
-- **Description:** YAML configuration files for deploying Longhorn, a distributed block storage system for Kubernetes.
-- **Purpose:** Provides persistent storage solutions for stateful applications running on the Kubernetes cluster.
+This repository **does not** contain application source code unless it is infrastructure-related. Application logic lives in **separate repositories** and it referenced here when deployed.
 
-### [Nginx Ingress](https://github.com/Cyrof/rpi-home-server-config/tree/main/nginx)
-- **Description:** Yaml Configuration files for deploygin NGINX Ingress Controller, which manages external access to services in the Kubernetes cluster.
-- **Purpose:** Routes incoming traffic to various services deployed on the Kubernetes cluster.
+## Node Layout & Roles
+> IPs are partially masked intentionally.
 
-### [PaperMC Server](https://github.com/Cyrof/rpi-home-server-config/tree/main/minecraft-server)
-- **Description:** Custom configurations and YAML files for deploying a PaperMC Minecraft server using the [itzy-minecraft](https://github.com/itzg/docker-minecraft-server) docker image.
-- **Purpose:** Hosts a Minecraft server on the Raspberry Pi home server for gaming and entertainment purposes.
+| Node | IP Address | Role(s) |
+| --- | --- | --- |
+| 1 | `xxx.xxx.xxx.1` | **Control Plane (Master)** |
+| 2 | `xxx.xxx.xxx.2` | **Edge / Ingress Node** |
+| 3 | `xxx.xxx.xxx.3` | **DNS Node (Pi-hole)** |
+| 4 | `xxx.xxx.xxx.4` | **VPN Node** |
 
-### [Ansible Config](https://github.com/Cyrof/rpi-home-server-config/tree/main/ansible-configs)
-- **Description:** Ansible playbooks for managing the k3s nodes.
-- **Purpose:** Automate configuration and managment tasks for the Rapsberry Pi Kubernetes cluster.
+### Role Notes 
+- **Master**: runs control plane components only
+- **Edge Node**: dedicated ingress & external traffic handling 
+- **DNS Node**: reserved for Pi-hole / internal DNS
+- **VPN Node**: Hosts WireGuard-based access into the cluster 
 
-### [Coffee Review Website](https://github.com/Cyrof/rpi-home-server-config/tree/main/coffee-review-website)
-- **Description:** Configurations for a coffee review website.
-- **Purpose:** Deploy a website for reviewing coffee products on the Raspberry Pi home server.
+## Kubernetes-Deployed Components (Active)
+These components are deployed **inside the k3s cluster**.
 
-### [WOL Website](https://github.com/Cyrof/rpi-home-server-config/tree/main/wakeonlan)
-- **Description:** Configuration files for deploying a Wake-on-LAN website.
-- **Purpose:** Allows user to send Wake-on-LAN packets to wake up their main PC remotely.
+### `ansible-configs/`
+- Ansible playbooks for:
+    - node preparation
+    - base OS configuration 
+    - cluster-related automation
 
-## Usage
+### `nginx`
+- NGINX Ingress Controller 
+- Handles all inbound HTTP/HTTPS traffic 
+- Acts as the primary entry point for cluster services
 
-1. Clone this repository to your local machine: 
-    ```bash
-    git clone https://github.com/Cyrof/rpi-home-server-config.git
-    ```
-2. Navigate to the desired configuration folder (e.g., 'longhorn', 'nginx', 'minecraft-server').
-3. Apply the YAML files using `kubectl apply -f <filename>` to deploy the corresponding services on your kubernetes cluster.
-4. Monitor the deployment using `kubectl get <resource>` commands to ensure successful deployment and access to the services.
+### `cert-manager`
+- Manages TLS certificates for internal and external services
+- Used together with NGINX Ingress
+- Self-hosted configuration (no cloud dependency)
 
-## Additional Notes
+### `portfolio`
+- Dynamic DNS updater for Porkbun
+- Automatically updates public IP when ISP/router changes IP
+- Required because home IP changes frequently 
 
-- Ensure that your Raspberry Pi is properly configured with k3s before deploying these configurations.
-- Make any necessary adjustments to the YAML files (e.g., namespaces, hostnames) to fit your specific environment.
-- Refer to the offical documentaion for each service for detailed configuration options and troubleshooting.
+## Node-Local Services (Outside Kubernetes)
+
+These services **run directly on specific nodes**, not as pods.
+
+### VPN (WireGuard)
+- Runs on the **VPN Node**
+- Provides secure access into the home network and cluster
+- Used by:
+    - personal devices
+    - remote access
+    - cluster administrator
+
+### DNS (Planned - Pi-hole)
+- Runs  on the **DNS Node**
+- Provides:
+    - internal DNS resolution
+    - ad-blocking
+    - split-horizon DNS for cluster service
+
+## GopherGate (WireGuard Management)
+
+WireGuard management is handled by **GopherGate**, which is maintained in a **separate repository**.
+
+- This repository may include GopherGate as a **git submodule**
+- Helm charts and application logic live in the GopherGate repo
+- This repo only documents its **integration into the cluster**
+
+## Archived Components
+Unused or paused stacks are moved into `archive/`.
+
+This keeps the root clean while preserving history.
+
+Example:
+- Previous applications
+- Experimental services
+- One-off deployments
+
+Nothing in `archive/` is considered active.
+
+## Repository Structure
+```bash
+.
+├── ansible-configs
+├── archive
+├── cert-manager
+├── LICENSE
+├── nginx
+├── porkbun-dns-updater
+├── portfolio
+└── README.md
+```
+
+## Cloning This Repository 
+This repository uses **git submodules**.
+
+Clone with:
+```bash
+git clone --recurse-submodules https://github.com/Cyrof/CyroStack.git
+```
+
+If already cloned:
+```bash
+git submodule update --init --recursive
+```
+
+## Design Philosophy
+- Infrastructure first, app second
+- Clear separation of concerns
+- Predictable node roles
+- Minimal coupling between services
+- Everything documented so future-me doesn't suffer
