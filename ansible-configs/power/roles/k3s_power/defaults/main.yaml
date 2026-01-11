@@ -1,7 +1,7 @@
 ---
 # Inventory groups
-k3s_masters_group: "masters"
-k3s_workers_group: "workers"
+k3s_masters_group: "k3s_master"
+k3s_workers_group: "k3s_workers"
 
 # Binaries / kubeconfig
 k3s_kubeconfig_path: "/etc/rancher/k3s/k3s.yaml"
