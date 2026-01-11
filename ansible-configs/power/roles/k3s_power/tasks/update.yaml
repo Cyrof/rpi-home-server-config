@@ -1,0 +1,94 @@
+---
+- name: Set control-plane host fact
+  ansible.builtin.set_fact:
+    k3s_master_host: "{{ groups[k3s_masters_group][0] }}"
+  changed_when: false
+
+# -----------------------------
+# WORKERS (rolling)
+# -----------------------------
+- name: Workers | Cordon
+  ansible.builtin.command: >
+    {{ k3s_kubectl_path }} --kubeconfig {{ k3s_kubeconfig_path }}
+    cordon {{ ansible_hostname }}
+  delegate_to: "{{ k3s_master_host }}"
+  become: true
+  changed_when: false
+  when: inventory_hostname in groups[k3s_workers_group]
+
+- name: Workers | Drain
+  ansible.builtin.command: >
+    {{ k3s_kubectl_path }} --kubeconfig {{ k3s_kubeconfig_path }}
+    drain {{ ansible_hostname }}
+    --ignore-daemonsets
+    --delete-emptydir-data
+    --grace-period={{ k3s_grace_period }}
+    --timeout={{ k3s_drain_timeout }}
+  delegate_to: "{{ k3s_master_host }}"
+  become: true
+  changed_when: false
+  when: inventory_hostname in groups[k3s_workers_group]
+
+- name: Workers | Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+  when: inventory_hostname in groups[k3s_workers_group]
+
+- name: Workers | Dist-upgrade + autoremove
+  ansible.builtin.apt:
+    upgrade: dist
+    autoremove: true
+  register: k3s_power_worker_upgrade
+  when: inventory_hostname in groups[k3s_workers_group]
+
+- name: Workers | Reboot if needed
+  ansible.builtin.reboot:
+    reboot_timeout: 300
+  when:
+    - inventory_hostname in groups[k3s_workers_group]
+    - k3s_power_worker_upgrade is changed
+
+- name: Workers | Wait until node becomes Ready (checked from master)
+  ansible.builtin.command: >
+    {{ k3s_kubectl_path }} --kubeconfig {{ k3s_kubeconfig_path }}
+    get node {{ ansible_hostname }}
+    -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
+  register: k3s_power_ready_status
+  delegate_to: "{{ k3s_master_host }}"
+  become: true
+  retries: 36
+  delay: 5
+  until: k3s_power_ready_status.stdout == "True"
+  changed_when: false
+  when: inventory_hostname in groups[k3s_workers_group]
+
+- name: Workers | Uncordon
+  ansible.builtin.command: >
+    {{ k3s_kubectl_path }} --kubeconfig {{ k3s_kubeconfig_path }}
+    uncordon {{ ansible_hostname }}
+  delegate_to: "{{ k3s_master_host }}"
+  become: true
+  changed_when: false
+  when: inventory_hostname in groups[k3s_workers_group]
+
+# -----------------------------
+# MASTER (last)
+# -----------------------------
+- name: Master | Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+  when: inventory_hostname in groups[k3s_masters_group]
+
+- name: Master | Dist-upgrade + autoremove
+  ansible.builtin.apt:
+    upgrade: dist
+    autoremove: true
+  register: k3s_power_master_upgrade
+  when: inventory_hostname in groups[k3s_masters_group]
+
+- name: Master | Reboot if needed
+  ansible.builtin.reboot:
+    reboot_timeout: 300
+  when:
+    - inventory_hostname in groups[k3s_masters_group]
+    - k3s_power_master_upgrade is changed
