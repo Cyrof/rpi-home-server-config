@@ -1,0 +1,172 @@
+---
+# Common computed facts
+- name: Set control-plane host fact
+  ansible.builtin.set_fact:
+    k3s_master_host: "{{ groups[k3s_masters_group][0] }}"
+  tags: [shutdown]
+
+# -----------------------------
+# WORKERS: cordon/drain/stop/shutdown (serial behavior)
+# NOTE: serial belongs to a play, not tasks. We mimic serial by "run_once" + loop delegation
+# BUT simplest: keep serial in how you run it: use --limit workers and --forks 1,
+# or split plays. Since you want one play, we do per-host task sequencing.
+# -----------------------------
+
+- name: Workers | Ensure API is ready (delegate to master)
+  ansible.builtin.command: >
+    {{ k3s_kubectl_path }} --kubeconfig {{ k3s_kubeconfig_path }} get --raw=/readyz
+  register: apiready
+  retries: 30
+  delay: 5
+  until: apiready.rc == 0
+  delegate_to: "{{ k3s_master_host }}"
+  become: true
+  when: inventory_hostname in groups[k3s_workers_group]
+
+- name: Workers | Cordon node
+  ansible.builtin.command: >
+    {{ k3s_kubectl_path }} --kubeconfig {{ k3s_kubeconfig_path }}
+    cordon {{ ansible_hostname }}
+  delegate_to: "{{ k3s_master_host }}"
+  become: true
+  changed_when: false
+  when: inventory_hostname in groups[k3s_workers_group]
+
+- name: Workers | Drain node
+  ansible.builtin.command: >
+    {{ k3s_kubectl_path }} --kubeconfig {{ k3s_kubeconfig_path }}
+    drain {{ ansible_hostname }}
+    --ignore-daemonsets
+    --delete-emptydir-data
+    --grace-period={{ k3s_grace_period }}
+    --timeout={{ k3s_drain_timeout }}
+  delegate_to: "{{ k3s_master_host }}"
+  become: true
+  changed_when: false
+  when: inventory_hostname in groups[k3s_workers_group]
+
+- name: Workers | Stop k3s-agent
+  ansible.builtin.systemd:
+    name: k3s-agent
+    state: stopped
+    enabled: true
+  when: inventory_hostname in groups[k3s_workers_group]
+
+- name: Workers | Find shutdown command
+  ansible.builtin.shell: |
+    set -e
+    if command -v shutdown >/dev/null 2>&1; then echo "shutdown -h +1"; exit 0; fi
+    if command -v systemctl >/dev/null 2>&1; then echo "systemctl poweroff"; exit 0; fi
+    if command -v poweroff >/dev/null 2>&1; then echo "poweroff"; exit 0; fi
+    echo "/sbin/shutdown -h +1"
+  args:
+    executable: /bin/bash
+  register: shutdown_cmd
+  changed_when: false
+  when: inventory_hostname in groups[k3s_workers_group]
+
+- name: Workers | Schedule poweroff
+  ansible.builtin.command: "{{ shutdown_cmd.stdout }}"
+  ignore_errors: true
+  changed_when: false
+  when: inventory_hostname in groups[k3s_workers_group]
+
+- name: Workers | Wait for SSH to go away
+  delegate_to: localhost
+  become: false
+  ansible.builtin.wait_for:
+    host: "{{ hostvars[inventory_hostname].ansible_host | default(inventory_hostname) }}"
+    port: "{{ k3s_shutdown_ssh_port }}"
+    state: stopped
+    delay: 5
+    timeout: "{{ k3s_shutdown_wait_ssh_timeout }}"
+  when: inventory_hostname in groups[k3s_workers_group]
+
+# -----------------------------
+# MASTER: cordon/drain/snapshot/stop/shutdown
+# -----------------------------
+
+- name: Master | Cordon
+  ansible.builtin.command: >
+    {{ k3s_kubectl_path }} --kubeconfig {{ k3s_kubeconfig_path }}
+    cordon {{ ansible_hostname }}
+  changed_when: false
+  when: inventory_hostname in groups[k3s_masters_group]
+
+- name: Master | Drain
+  ansible.builtin.command: >
+    {{ k3s_kubectl_path }} --kubeconfig {{ k3s_kubeconfig_path }}
+    drain {{ ansible_hostname }}
+    --ignore-daemonsets
+    --delete-emptydir-data
+    --grace-period={{ k3s_grace_period }}
+    --timeout={{ k3s_drain_timeout }}
+  changed_when: false
+  when: inventory_hostname in groups[k3s_masters_group]
+
+- name: Master | Check for embedded etcd dir
+  ansible.builtin.stat:
+    path: /var/lib/rancher/k3s/server/db/etcd
+  register: k3s_power_etcd_dir_stat
+
+- name: Master | Check for sqlite state db
+  ansible.builtin.stat:
+    path: /var/lib/rancher/k3s/server/db/state.db
+  register: k3s_power_sqlite_db_stat
+
+- name: Master | Determine datastore
+  ansible.builtin.set_fact:
+    k3s_power_using_etcd: >-
+      {{ (k3s_power_etcd_dir_stat.stat.exists | default(false))
+         and not (k3s_power_sqlite_db_stat.stat.exists | default(false)) }}
+
+- name: Master | Take embedded etcd snapshot (if applicable)
+  ansible.builtin.shell: |
+    mkdir -p {{ k3s_etcd_snapshot_dir }}
+    /usr/local/bin/k3s etcd-snapshot save \
+      --dir {{ k3s_etcd_snapshot_dir }} \
+      --name {{ k3s_etcd_snapshot_name }}
+  args:
+    chdir: /
+  register: etcd_snap
+  changed_when: "'saved' in (etcd_snap.stdout | default('')) or etcd_snap.rc == 0"
+  failed_when: using_etcd | bool and etcd_snap.rc != 0
+  when:
+    - inventory_hostname in groups[k3s_masters_group]
+    - using_etcd | default(false) | bool
+
+- name: Master | Stop k3s server
+  ansible.builtin.systemd:
+    name: k3s
+    state: stopped
+    enabled: true
+  when: inventory_hostname in groups[k3s_masters_group]
+
+- name: Workers | Find shutdown command
+  ansible.builtin.shell: |
+    set -e
+    if command -v shutdown >/dev/null 2>&1; then echo "shutdown -h +1"; exit 0; fi
+    if command -v systemctl >/dev/null 2>&1; then echo "systemctl poweroff"; exit 0; fi
+    if command -v poweroff >/dev/null 2>&1; then echo "poweroff"; exit 0; fi
+    echo "/sbin/shutdown -h +1"
+  args:
+    executable: /bin/bash
+  register: k3s_power_shutdown_cmd
+  changed_when: false
+
+- name: Master | Schedule poweroff
+  ansible.builtin.command: "{{ shutdown_cmd_master.stdout }}"
+  ignore_errors: true
+  changed_when: false
+  when: inventory_hostname in groups[k3s_masters_group]
+
+- name: Master | Wait for SSH to go away
+  delegate_to: localhost
+  become: false
+  ansible.builtin.wait_for:
+    host: "{{ hostvars[inventory_hostname].ansible_host | default(inventory_hostname) }}"
+    port: "{{ k3s_shutdown_ssh_port }}"
+    state: stopped
+    delay: 5
+    timeout: "{{ k3s_shutdown_wait_ssh_timeout }}"
+  when: inventory_hostname in groups[k3s_masters_group]

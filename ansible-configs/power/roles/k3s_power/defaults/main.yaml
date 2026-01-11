@@ -1,0 +1,20 @@
+---
+# Inventory groups
+k3s_masters_group: "masters"
+k3s_workers_group: "workers"
+
+# Binaries / kubeconfig
+k3s_kubeconfig_path: "/etc/rancher/k3s/k3s.yaml"
+k3s_kubectl_path: "/usr/local/bin/kubectl"
+
+# Drain behavior
+k3s_drain_timeout: "600s"
+k3s_grace_period: 60
+
+# Shutdown wait
+k3s_shutdown_ssh_port: 22
+k3s_shutdown_wait_ssh_timeout: 300
+
+# etcd snapshot (only if embedded etcd detected)
+k3s_etcd_snapshot_dir: "/var/lib/rancher/k3s/server/db/snapshots"
+k3s_etcd_snapshot_name: "on-demand"

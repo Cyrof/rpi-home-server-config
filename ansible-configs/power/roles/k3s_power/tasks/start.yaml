@@ -1,0 +1,114 @@
+---
+- name: Set control-plane host fact
+  ansible.builtin.set_fact:
+    k3s_master_host: "{{ groups[k3s_masters_group][0] }}"
+  tags: [start]
+
+# -----------------------------
+# MASTER: ensure server started + uncordon
+# -----------------------------
+
+- name: Master | Wait for SSH
+  delegate_to: localhost
+  become: false
+  ansible.builtin.wait_for:
+    host: "{{ hostvars[inventory_hostname].ansible_host | default(inventory_hostname) }}"
+    port: 22
+    state: started
+    timeout: 5
+  register: k3s_power_ssh_up_master
+  ignore_errors: true
+  changed_when: false
+
+- name: Master | Skip host if not reachable
+  ansible.builtin.meta: end_host
+  when: k3s_power_ssh_up_master is failed
+
+- name: Master | Gather facts
+  ansible.builtin.setup:
+  when: inventory_hostname in groups[k3s_masters_group]
+
+- name: Master | Ensure k3s server is running
+  ansible.builtin.systemd:
+    name: k3s
+    state: started
+    enabled: true
+  when: inventory_hostname in groups[k3s_masters_group]
+
+- name: Master | Wait for API ready
+  ansible.builtin.command: >
+    {{ k3s_kubectl_path }} --kubeconfig {{ k3s_kubeconfig_path }} get --raw=/readyz
+  register: k3s_apiready
+  retries: 30
+  delay: 5
+  until: k3s_apiready.rc == 0
+  changed_when: false
+
+- name: Master | Uncordon
+  ansible.builtin.command: >
+    {{ k3s_kubectl_path }} --kubeconfig {{ k3s_kubeconfig_path }} uncordon {{ ansible_hostname }}
+  changed_when: false
+  when: inventory_hostname in groups[k3s_masters_group]
+
+# -----------------------------
+# WORKERS: start agent + wait Ready (checked from master) + uncordon
+# -----------------------------
+
+- name: Workers | Wait for SSH
+  delegate_to: localhost
+  become: false
+  ansible.builtin.wait_for:
+    host: "{{ hostvars[inventory_hostname].ansible_host | default(inventory_hostname) }}"
+    port: 22
+    state: started
+    timeout: 5
+  register: ssh_up_worker
+  ignore_errors: true
+  when: inventory_hostname in groups[k3s_workers_group]
+
+- name: Workers | Skip host if not reachable
+  ansible.builtin.meta: end_host
+  when:
+    - inventory_hostname in groups[k3s_workers_group]
+    - ssh_up_worker is failed
+
+- name: Workers | Gather facts
+  ansible.builtin.setup:
+  when: inventory_hostname in groups[k3s_workers_group]
+
+- name: Workers | Cancel any scheduled shutdown
+  ansible.builtin.shell: shutdown -c || true
+  changed_when: false
+  when: inventory_hostname in groups[k3s_workers_group]
+
+- name: Workers | Ensure time sync is running (avoid TLS time skew)
+  ansible.builtin.systemd:
+    name: systemd-timesyncd
+    state: started
+    enabled: true
+  failed_when: false
+  when: inventory_hostname in groups[k3s_workers_group]
+
+- name: Workers | Ensure k3s-agent is running
+  ansible.builtin.systemd:
+    name: k3s-agent
+    state: started
+    enabled: true
+  when: inventory_hostname in groups[k3s_workers_group]
+
+- name: Master | Wait for API ready
+  ansible.builtin.command: >
+    {{ k3s_kubectl_path }} --kubeconfig {{ k3s_kubeconfig_path }} get --raw=/readyz
+  register: k3s_apiready
+  retries: 30
+  delay: 5
+  until: k3s_apiready.rc == 0
+  changed_when: false
+
+- name: Workers | Uncordon (from master)
+  ansible.builtin.command: >
+    {{ k3s_kubectl_path }} --kubeconfig {{ k3s_kubeconfig_path }} uncordon {{ ansible_hostname }}
+  delegate_to: "{{ k3s_master_host }}"
+  become: true
+  changed_when: false
+  when: inventory_hostname in groups[k3s_workers_group]

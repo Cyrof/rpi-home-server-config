@@ -1,0 +1,10 @@
+---
+- name: Start flow
+  ansible.builtin.import_tasks: start.yaml
+  tags:
+    - start
+
+- name: Shutdown flow
+  ansible.builtin.import_tasks: shutdown.yaml
+  tags:
+    - shutdown
