@@ -1,32 +1,32 @@
 - name: Gracefully drain & shut down k3s AGENTS
-  hosts: k3s_agents
+  hosts: workers
   gather_facts: yes
   become: yes
   serial: 1
   vars:
     kubeconfig_path: /etc/rancher/k3s/k3s.yaml
     kubectl_path: /usr/local/bin/kubectl
-    k3s_server_host: "{{ groups['k3s_server'][0] }}"
+    master_host: "{{ groups['master'][0] }}"
     k8s_node_name: "{{ hostvars[inventory_hostname].ansible_hostname }}"
     drain_timeout: 600s
     grace_period: 60
 
   pre_tasks:
-    - name: Ensure k3s server is running (on {{ k3s_server_host }})
+    - name: Ensure k3s server is running (on {{ master_host }})
       ansible.builtin.systemd:
         name: k3s
         enabled: yes
-      delegate_to: "{{ k3s_server_host }}"
+      delegate_to: "{{ master_host }}"
       become: yes
 
-    - name: Wait for Kubernetes API to be ready (on {{ k3s_server_host }})
+    - name: Wait for Kubernetes API to be ready (on {{ master_host }})
       ansible.builtin.command: >
         {{ kubectl_path }} --kubeconfig {{ kubeconfig_path }} get --raw=/readyz
       register: apiready
       retries: 30
       delay: 5
       until: apiready.rc == 0
-      delegate_to: "{{ k3s_server_host }}"
+      delegate_to: "{{ master_host }}"
       become: yes
 
     - name: (Sanity) Show node name that will be cordoned
@@ -40,7 +40,7 @@
           {{ kubectl_path }}
           --kubeconfig {{ kubeconfig_path }}
           cordon {{ k8s_node_name }}
-      delegate_to: "{{ k3s_server_host }}"
+      delegate_to: "{{ master_host }}"
 
     - name: Drain {{ k8s_node_name }} (ignore Daemonset; evicts pod safely)
       ansible.builtin.command:
@@ -52,7 +52,7 @@
           --delete-emptydir-data
           --grace-period={{ grace_period }}
           --timeout={{ drain_timeout }}
-      delegate_to: "{{ k3s_server_host }}"
+      delegate_to: "{{ master_host }}"
 
     - name: Stop k3s agent
       ansible.builtin.systemd:
@@ -87,7 +87,7 @@
         timeout: 300
 
 - name: Gracefully drain & shut down the k3s SERVER
-  hosts: k3s_server
+  hosts: master
   gather_facts: yes
   become: yes
   serial: 1
