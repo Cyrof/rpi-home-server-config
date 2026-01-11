@@ -1,0 +1,20 @@
+---
+# where pi-hole compose + persistent data lives
+pihole_dir: /opt/pihole
+
+# Basic settings
+pihole_tz: "Asia/Singapore"
+pihole_webpassword: "changeme"
+
+# Upstream DNS resolver
+pihole_upstream_dns:
+  - "1.1.1.1"
+  - "1.0.0.1"
+
+# dns server used by the container
+pihole_container_dns:
+  - "1.1.1.1"
+  - "8.8.8.8"
+
+# ufa management
+pihole_manage_ufw: false

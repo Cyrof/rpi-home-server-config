@@ -1,0 +1,6 @@
+---
+- name: Pi-hole on node (Docker Compose)
+  hosts: pihole
+  become: true
+  roles:
+    - pihole

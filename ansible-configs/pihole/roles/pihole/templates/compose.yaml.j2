@@ -1,0 +1,26 @@
+services:
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    hostname: pihole
+    restart: unless-stopped
+
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "80:80/tcp"
+
+    environment:
+      TZ: "{{ pihole_tz }}"
+      WEBPASSWORD: "{{ pihole_webpassword }}"
+      DNSMASQ_LISTENING: "all"
+      PIHOLE_DNS_: "{{ pihole_upstream_dns | join(';') }}"
+
+    volumes:
+      - "./etc-pihole:/etc/pihole"
+      - "./etc-dnsmasq.d:/etc/dnsmasq.d"
+
+    dns:
+{% for d in pihole_container_dns %}
+      - {{ d }}
+{% endfor %}

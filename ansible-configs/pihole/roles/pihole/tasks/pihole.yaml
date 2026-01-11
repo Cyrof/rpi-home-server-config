@@ -1,0 +1,45 @@
+---
+- name: Check if something is already listening on porot 53
+  ansible.builtin.command: "ss -lntup"
+  register: ss_out
+  changed_when: false
+
+- name: Warn if port 53 appears in listeners (informational)
+  ansible.builtin.debug:
+    msg: |
+      Detected listeners. If you see 0.0.0.0:53 or :::53 in output below,
+      Pi-hole may fail to bind.
+      {{ ss_out.stdout | regex_search('(?m)^.*:53\\b.*$') | default('No obvious :53 listener line found') }}
+
+- name: Create Pi-hole directory
+  ansible.builtin.file:
+    path: "{{ pihole_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Create persistent volume dirs
+  ansible.builtin.file:
+    path: "{{ pihole_dir }}/{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - etc-pihole
+    - etc-dnsmasq.d
+
+- name: Deploy compose.yaml
+  ansible.builtin.template:
+    src: compose.yaml.j2
+    dest: "{{ pihole_dir }}/compose.yaml"
+    mode: "0644"
+  notify: Restart pihole
+
+- name: Bring up Pi-hole via docker compose
+  ansible.builtin.command:
+    cmd: docker compose up -d
+    chdir: "{{ pihole_dir }}"
+  register: compose_up
+  changed_when: "'Recreated' in compose_up.stdout or 'Created' in compose_up.stdout or 'Started' in compose_up.stdout"
+
+- name: Show Pi-hole UI URL
+  ansible.builtin.debug:
+    msg: "Pi-hole UI: http://{{ ansible_host | default(inventory_hostname) }}/admin"

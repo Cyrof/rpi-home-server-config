@@ -1,0 +1,6 @@
+---
+- name: Install Docker + Compose
+  ansible.builtin.import_tasks: docker.yaml
+
+- name: Deploy Pi-hole (compose)
+  ansible.builtin.import_tasks: pihole.yaml
