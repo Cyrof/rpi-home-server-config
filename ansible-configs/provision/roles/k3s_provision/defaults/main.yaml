@@ -1,0 +1,15 @@
+---
+# Inventory groups
+k3s_masters_group: "k3s_master"
+k3s_new_nodes_group: "new_nodes"
+
+# k3s version pin
+k3s_version: "v1.32.3+k3s1"
+
+# Install prereqs on new nodes
+k3s_agent_prereqs:
+  - curl
+  - ca-certificates
+  - iptables
+  - socat
+  - conntrack

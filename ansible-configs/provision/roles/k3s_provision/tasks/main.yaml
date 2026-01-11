@@ -1,0 +1,12 @@
+---
+- name: k3s_provision | Check Raspberry Pi OS details
+  ansible.builtin.import_tasks: check_pi_os.yaml
+  tags:
+    - check
+    - check_pi_os
+
+- name: k3s_provision | Join new nodes to k3s
+  ansible.builtin.import_tasks: join_new_nodes.yaml
+  tags:
+    - join
+    - k3s_join

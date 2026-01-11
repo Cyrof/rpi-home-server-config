@@ -1,0 +1,8 @@
+---
+- name: k3s provisioning tasks (check/join)
+  hosts: all
+  gather_facts: false
+  become: true
+
+  roles:
+    - role: k3s_provision

@@ -1,0 +1,36 @@
+---
+- name: k3s_provision | Check | Show OS release info
+  ansible.builtin.command: cat /etc/os-release
+  register: k3s_provision_os_release
+  changed_when: false
+  become: false
+
+- name: k3s_provision | Check | Show kernel version
+  ansible.builtin.command: uname -r
+  register: k3s_provision_kernel_version
+  changed_when: false
+  become: false
+
+- name: k3s_provision | Check | Show CPU architecture
+  ansible.builtin.command: uname -m
+  register: k3s_provision_arch
+  changed_when: false
+  become: false
+
+- name: k3s_provision | Check | Show userspace bitness
+  ansible.builtin.command: getconf LONG_BIT
+  register: k3s_provision_bitness
+  changed_when: false
+  become: false
+
+- name: k3s_provision | Check | Display Raspberry Pi system summary
+  ansible.builtin.debug:
+    msg:
+      - "Host: {{ inventory_hostname }}"
+      - "OS: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+      - "OS Release:"
+      - "{{ k3s_provision_os_release.stdout_lines }}"
+      - "Kernel: {{ k3s_provision_kernel_version.stdout }}"
+      - "Architecture: {{ k3s_provision_arch.stdout }}"
+      - "Userspace: {{ k3s_provision_bitness.stdout }}-bit"
+  become: false

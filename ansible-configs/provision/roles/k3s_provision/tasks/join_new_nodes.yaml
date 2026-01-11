@@ -1,0 +1,71 @@
+---
+# -----------------------------
+# Step 1: Collect join info from a master (run once)
+# -----------------------------
+- name: k3s_provision | Join | Ensure we have a master host
+  ansible.builtin.assert:
+    that:
+      - groups[k3s_masters_group] | length > 0
+    fail_msg: "No hosts found in masters group '{{ k3s_masters_group }}'."
+  run_once: true
+  changed_when: false
+
+- name: k3s_provision | Join | Read k3s node-token from master
+  ansible.builtin.slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: k3s_provision_node_token_b64
+  delegate_to: "{{ groups[k3s_masters_group][0] }}"
+  become: true
+  run_once: true
+
+- name: k3s_provision | Join | Get master LAN IP
+  ansible.builtin.command: hostname -I
+  register: k3s_provision_master_ip_raw
+  changed_when: false
+  delegate_to: "{{ groups[k3s_masters_group][0] }}"
+  become: true
+  run_once: true
+
+- name: k3s_provision | Join | Set join connection facts
+  ansible.builtin.set_fact:
+    k3s_provision_master_url: "https://{{ (k3s_provision_master_ip_raw.stdout.split() | first) }}:6443"
+    k3s_provision_node_token: "{{ k3s_provision_node_token_b64.content | b64decode | trim }}"
+  run_once: true
+
+# -----------------------------
+# Step 2: Install agent on new nodes
+# -----------------------------
+- name: k3s_provision | Join | Install prerequisites (new nodes)
+  ansible.builtin.apt:
+    update_cache: true
+    name: "{{ k3s_agent_prereqs }}"
+    state: present
+  when: inventory_hostname in groups[k3s_new_nodes_group]
+
+- name: k3s_provision | Join | Install k3s agent (pinned version)
+  ansible.builtin.shell: |
+    set -eu
+    curl -sfL https://get.k3s.io | \
+      INSTALL_K3S_VERSION="{{ k3s_version }}" \
+      K3S_URL="{{ hostvars[groups[k3s_masters_group][0]].k3s_provision_master_url | default(k3s_provision_master_url) }}" \
+      K3S_TOKEN="{{ hostvars[groups[k3s_masters_group][0]].k3s_provision_node_token | default(k3s_provision_node_token) }}" \
+      sh -s - agent
+  args:
+    creates: /usr/local/bin/k3s
+  when: inventory_hostname in groups[k3s_new_nodes_group]
+
+- name: k3s_provision | Join | Enable and start k3s-agent
+  ansible.builtin.systemd:
+    name: k3s-agent
+    enabled: true
+    state: started
+  when: inventory_hostname in groups[k3s_new_nodes_group]
+
+- name: k3s_provision | Join | Wait for k3s-agent to become active
+  ansible.builtin.command: systemctl is-active k3s-agent
+  register: k3s_provision_agent_state
+  retries: 10
+  delay: 3
+  until: k3s_provision_agent_state.stdout.strip() == "active"
+  changed_when: false
+  when: inventory_hostname in groups[k3s_new_nodes_group]
