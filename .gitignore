@@ -126,4 +126,4 @@ zz_generated_*_test.go
 vendordiff.patch
 
 # ansible host file
-./ansible-configs/*.ini
+**.ini
