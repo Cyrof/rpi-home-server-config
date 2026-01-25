@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "wol.fullname" . }}
+  labels:
+    {{- include "wol.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "wol.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        {{- include "wol.labels" . | nindent 8 }}
+    spec:
+      {{- if .Values.hostNetwork }}
+      hostNetwork: true
+      dnsPolicy: {{ .Values.dnsPolicy | default "ClusterFirstWithHostNet" }}
+      {{- end }}
+      containers:
+        - name: wol
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.containerPort }}
+          env:
+            - name: WOL_BROADCAST
+              value: {{ .Values.env.broadcast | quote }}
+            - name: WOL_PORT
+              value: {{ .Values.env.port | quote }}
+            - name: WOL_DEVICES
+              value: {{ .Values.env.devices | quote }}
+            {{- if .Values.auth.enabled }}
+            - name: WOL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.auth.existingSecret | default (include "wol.fullname" .) }}
+                  key: {{ .Values.auth.existingSecretKey | default "token" }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      tolerations:
+        {{- toYaml .Values.tolerations | nindent 8 }}
+      affinity:
+        {{- toYaml .Values.affinity | nindent 8 }}

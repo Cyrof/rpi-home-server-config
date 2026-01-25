@@ -1,25 +1,81 @@
-# Wake-on-LAN Configuration 
+# Wake-on-Lan (WOL) Service
 
-This folder contains the configurtion files for setting up Wake-on-LAN functionality on the Raspberry Pi home server. Wake-on-LAN allows users to remotely wake up their main PC from a low-power state using a network packet.
+This directory contains the Helm chart and deployment configuration for the Wake-onLAN (WOL) service running on the Cyrostack k3s cluster.
 
-## Configuration Files
+The service exposes a small HTTP UI and API that allows you to wake devices on the local network by sending a Wake-on-LAN magic packet.
 
-1. **`wol-secrets.yaml`**
-   - **Purpose:** This file contains sensitive information such as MAC address and broadcast IP used for Wake-on-LAN.
-   - **Action Required:**
-     - Users should update the encoded variables in the `MAC` and `BROADCAST` fields with their specific values.
-     - Refer to the [Secrets](https://github.com/Cyrof/rpi-home-server-config/blob/main/wakeonlan/wol-secrets.yaml) folder for guidance on updating encoded variables.
-2. **`wol-nodeport.yaml`**
-   - **Purpose:** This file configures the NodePort for accessing the Wake-on-LAN service externally.
-   - **Action Required:**
-     - Users should update the port numbers as needed for their setup.
-3. **`wol-deploy.yaml`**
-   - **Purpose:** This file contains the deployment configuration for the Wak-on-LAN service.
-   - **Action Required:**
-     - Users shoud Update the port number as needed for their setup.
+It is designed for internal access only (LAN/VPN) and is exposed through the cluster's NGINX Ingress Controller.
 
-## Additional Information 
+## Key Design Decisions
 
-- For more details on the image used for Wake-on-LAN, refer to [RemoteWakeServer](https://github.com/Cyrof/RemoteWakeServer) on GitHub.
-- Ensure that all configurations are applied correctly using `kubectl apply -f <filename>` command after making the necessary changes.
-- For further assistance or troubleshooting, please refer to the official documentation or open an issues stating the issue.
+- Helm-based deployment (no raw manifests)
+- Ingress + NodePort (no public exposure)
+- DNS handled by Pi-hole
+- No secrets committed to Git
+- MAC addresses are OK
+- Optional token auth exiists in code but is disabled in Helm by default
+
+## DNS Configuration (Pi-hole)
+
+The WOL service is accessed via the cluster ingress node.
+
+### Required Pi-hole entry:
+
+```bash
+wol.cyrostack.arpa -> <ingress-node-ip>
+```
+
+**Notes**:
+
+- `<ingress-node-ip>` must be a node running the NGINX ingress controller
+- The service is accessed via the NodePort (default: `32080`)
+- This setup is intended for LAN / VPN access only
+
+## Accessing the Service
+
+Once deployed,access the UI at:
+
+```bash
+http://wol.cyrostack.arpa:32080
+```
+
+Health check endpoint:
+
+```bash
+http://wol.cyrostack.arpa:32080/healthz
+```
+
+## Helm deployment
+
+### Install / Upgrade
+
+```bash
+helm upgrade --install wol ./wol-server -n wol --create-namespace
+```
+
+### Verify
+
+```bash
+kubectl get all -n wol
+kubectl  get ingress -n wol
+```
+
+## Authentication Token (Optional)
+
+The application supports an optional auth token via the `X-Auth-Token` header.
+
+### Current setup:
+
+- Token exists in code
+- Token not enabled via Helm
+- Access is restricted by:
+    - LAN access
+    - VPN access
+    - Np public exposure
+
+If you later want to enable it:
+
+- Inject `TOKEN` via:
+    - Kubernetes Secret
+    - `values.yaml` -> `env`
+    - External secret manager
